@@ -30,6 +30,8 @@ from pymaker.feed import DSValue
 from pymaker.numeric import Wad
 from pymaker.sai import Tub
 
+from pysplit.price import ZcdPrice, DccPrice
+
 
 class Price(object):
     def __init__(self, buy_price: Optional[Wad], sell_price: Optional[Wad]):
@@ -149,6 +151,36 @@ class GdaxMidpointPriceFeed(GdaxPriceFeed):
         if gdax_midpoint_price:
             return Price(buy_price=Wad.from_number(gdax_midpoint_price), sell_price=Wad.from_number(gdax_midpoint_price))
 
+        else:
+            return Price(buy_price=None, sell_price=None)
+
+class SplitPriceFeed(PriceFeed):
+
+    def __init__(self, pair: str):
+        assert(isinstance(pair, str))
+
+        self.base = pair[0:3]
+        self.quote = pair[4:]
+
+        if self.base is "ZCD":
+            self.theoretical_value = ZcdPrice()
+        elif self.base is "DCC":
+            self.theoretical_value = DccPrice()
+        else:
+            self.theoretical_value = None
+
+
+    def get_price(self) -> Price:
+
+        if self.quote is "DAI":
+            price = self.theoretical_value.get_price_dai()
+        elif self.quote is "CHAI":
+            price = self.theoretical_value.get_price_chai()
+        else:
+            price = None
+
+        if price:
+            return Price(buy_price=Wad.from_number(price), sell_price=Wad.from_number(price))
         else:
             return Price(buy_price=None, sell_price=None)
 
