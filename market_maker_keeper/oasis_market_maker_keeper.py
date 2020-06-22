@@ -87,13 +87,13 @@ class OasisMarketMakerKeeper:
 
         parser.add_argument("--sell-token-name", type=str, required=True,
                             help="Ethereum address of the sell token")
-        
+
         parser.add_argument("--buy-token-decimals", type=int, required=True,
                             help="Ethereum address of the buy token")
 
         parser.add_argument("--sell-token-decimals", type=int, required=True,
                             help="Ethereum address of the sell token")
-        
+
         parser.add_argument("--config", type=str, required=True,
                             help="Bands configuration file")
 
@@ -143,7 +143,7 @@ class OasisMarketMakerKeeper:
 
         self.arguments = parser.parse_args(args)
         setup_logging(self.arguments)
-    
+
         self.web3 = kwargs['web3'] if 'web3' in kwargs else Web3(HTTPProvider(endpoint_uri=f"http://{self.arguments.rpc_host}:{self.arguments.rpc_port}",
                                                                               request_kwargs={"timeout": self.arguments.rpc_timeout}))
         self.web3.eth.defaultAccount = self.arguments.eth_from
@@ -164,7 +164,7 @@ class OasisMarketMakerKeeper:
         self.min_eth_balance = Wad.from_number(self.arguments.min_eth_balance)
         self.bands_config = ReloadableConfig(self.arguments.config)
         self.gas_price = GasPriceFactory().create_gas_price(self.arguments)
-        self.price_feed = PriceFeedFactory().create_price_feed(self.arguments, tub)
+        self.price_feed = PriceFeedFactory().create_price_feed(self.arguments, tub, self.web3)
         self.spread_feed = create_spread_feed(self.arguments)
         self.control_feed = create_control_feed(self.arguments)
         self.order_history_reporter = create_order_history_reporter(self.arguments)
@@ -296,7 +296,7 @@ class OasisMarketMakerKeeper:
             amount = new_order.buy_amount
 
         if transact is not None and transact.successful and transact.result is not None:
-            self.logger.info(f'Placing {buy_or_sell} order of amount {amount} {token_name} @ price {buy_or_sell_price} {quote_token}') 
+            self.logger.info(f'Placing {buy_or_sell} order of amount {amount} {token_name} @ price {buy_or_sell_price} {quote_token}')
             self.logger.info(f'Placing {buy_or_sell} order pay token: {p_token.name} with amount: {new_order.pay_amount}, buy token: {b_token.name} with amount: {new_order.buy_amount}')
             return Order(market=self.otc,
                          order_id=transact.result,

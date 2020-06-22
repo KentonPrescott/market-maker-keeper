@@ -23,9 +23,12 @@ from typing import Optional, List
 
 import websocket
 
+from web3 import Web3
+
 from gdax_client.price import GdaxPriceClient, GDAX_WS_URL
 from market_maker_keeper.feed import ExpiringFeed, WebSocketFeed, Feed
 from market_maker_keeper.setzer import Setzer
+from pymaker import Address
 from pymaker.feed import DSValue
 from pymaker.numeric import Wad
 from pymaker.sai import Tub
@@ -156,16 +159,16 @@ class GdaxMidpointPriceFeed(GdaxPriceFeed):
 
 class SplitPriceFeed(PriceFeed):
 
-    def __init__(self, pair: str):
+    def __init__(self, pair: str, web3: Web3, token_address: Address):
         assert(isinstance(pair, str))
 
         self.base = pair[0:3]
         self.quote = pair[4:]
 
         if self.base is "ZCD":
-            self.theoretical_value = ZcdPrice()
+            self.theoretical_value = ZcdPrice(web3, token_address)
         elif self.base is "DCC":
-            self.theoretical_value = DccPrice()
+            self.theoretical_value = DccPrice(web3, token_address)
         else:
             self.theoretical_value = None
 
@@ -280,12 +283,20 @@ class BackupPriceFeed(PriceFeed):
 
 class PriceFeedFactory:
     @staticmethod
-    def create_price_feed(arguments, tub: Tub = None) -> PriceFeed:
-        return BackupPriceFeed([PriceFeedFactory._create_price_feed(price_feed, arguments.price_feed_expiry, tub)
+    def create_price_feed(arguments, tub: Tub = None, web3: Web3) -> PriceFeed:
+        return BackupPriceFeed([PriceFeedFactory._create_price_feed(price_feed,
+                                                                    arguments.price_feed_expiry,
+                                                                    tub,
+                                                                    web3,
+                                                                    arguments.sell_token_address)
                                 for price_feed in arguments.price_feed.split(",")])
 
     @staticmethod
-    def _create_price_feed(price_feed_argument: str, price_feed_expiry_argument: int, tub: Optional[Tub]):
+    def _create_price_feed(price_feed_argument: str,
+                           price_feed_expiry_argument: int,
+                           tub: Optional[Tub]
+                           web3: Web3
+                           sell_token_address: str):
         assert(isinstance(price_feed_argument, str))
         assert(isinstance(price_feed_expiry_argument, int))
         assert(isinstance(tub, Tub) or tub is None)
@@ -346,6 +357,16 @@ class PriceFeedFactory:
         elif price_feed_argument == 'rep_usd-pair-midpoint':
               return GdaxMidpointPriceFeed(product_id="REP-USD",
                                            expiry=price_feed_expiry_argument)
+
+        elif price_feed_argument == 'zcd_chai-theory':
+              return SplitPriceFeed(pair="ZCD-CHAI",
+                                    web3=web3,
+                                    token_address=Address(sell_token_address))
+
+        elif price_feed_argument == 'dcc_chai-theory':
+              return SplitPriceFeed(pair="DCC-CHAI",
+                                    web3=web3,
+                                    token_address=Address(sell_token_address))
 
         elif price_feed_argument.startswith("fixed:"):
             price_feed = FixedPriceFeed(Wad.from_number(price_feed_argument[6:]))
