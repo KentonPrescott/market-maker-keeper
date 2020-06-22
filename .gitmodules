@@ -10,3 +10,6 @@
 [submodule "lib/gdax-client"]
 	path = lib/gdax-client
 	url = https://github.com/makerdao/gdax-client.git
+[submodule "lib/pysplit"]
+	path = lib/pysplit
+	url = https://github.com/makerdao/pysplit.git
