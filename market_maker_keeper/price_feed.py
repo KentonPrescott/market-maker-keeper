@@ -161,13 +161,15 @@ class SplitPriceFeed(PriceFeed):
 
     def __init__(self, pair: str, web3: Web3, token_address: Address):
         assert(isinstance(pair, str))
+        assert(isinstance(token_address, Address))
 
         self.base = pair[0:3]
         self.quote = pair[4:]
 
-        if self.base is "ZCD":
+
+        if self.base == "ZCD":
             self.theoretical_value = ZcdPrice(web3, token_address)
-        elif self.base is "DCC":
+        elif self.base == "DCC":
             self.theoretical_value = DccPrice(web3, token_address)
         else:
             self.theoretical_value = None
@@ -175,9 +177,9 @@ class SplitPriceFeed(PriceFeed):
 
     def get_price(self) -> Price:
 
-        if self.quote is "DAI":
+        if self.quote == "DAI":
             price = self.theoretical_value.get_price_dai()
-        elif self.quote is "CHAI":
+        elif self.quote == "CHAI":
             price = self.theoretical_value.get_price_chai()
         else:
             price = None
@@ -283,7 +285,7 @@ class BackupPriceFeed(PriceFeed):
 
 class PriceFeedFactory:
     @staticmethod
-    def create_price_feed(arguments, tub: Tub = None, web3: Web3) -> PriceFeed:
+    def create_price_feed(arguments, tub: Tub = None, web3: Web3 = None) -> PriceFeed:
         return BackupPriceFeed([PriceFeedFactory._create_price_feed(price_feed,
                                                                     arguments.price_feed_expiry,
                                                                     tub,
@@ -294,8 +296,8 @@ class PriceFeedFactory:
     @staticmethod
     def _create_price_feed(price_feed_argument: str,
                            price_feed_expiry_argument: int,
-                           tub: Optional[Tub]
-                           web3: Web3
+                           tub: Optional[Tub],
+                           web3: Web3,
                            sell_token_address: str):
         assert(isinstance(price_feed_argument, str))
         assert(isinstance(price_feed_expiry_argument, int))
