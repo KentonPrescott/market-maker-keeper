@@ -19,6 +19,7 @@ import json
 import logging
 import threading
 import time
+from decimal import *
 from typing import Optional, List
 
 import websocket
@@ -159,18 +160,19 @@ class GdaxMidpointPriceFeed(GdaxPriceFeed):
 
 class SplitPriceFeed(PriceFeed):
 
-    def __init__(self, pair: str, web3: Web3, token_address: Address):
-        assert(isinstance(pair, str))
-        assert(isinstance(token_address, Address))
+    def __init__(self, pair: str, web3: Web3, token_address: Address, dsr_offset: Decimal):
+        assert isinstance(pair, str)
+        assert isinstance(token_address, Address)
+        assert isinstance(dsr_offset, Decimal)
 
         self.base = pair[0:3]
         self.quote = pair[4:]
 
 
         if self.base == "ZCD":
-            self.theoretical_value = ZcdPrice(web3, token_address)
+            self.theoretical_value = ZcdPrice(web3, token_address, dsr_offset)
         elif self.base == "DCC":
-            self.theoretical_value = DccPrice(web3, token_address)
+            self.theoretical_value = DccPrice(web3, token_address, dsr_offset)
         else:
             self.theoretical_value = None
 
@@ -290,7 +292,8 @@ class PriceFeedFactory:
                                                                     arguments.price_feed_expiry,
                                                                     tub,
                                                                     web3,
-                                                                    arguments.sell_token_address)
+                                                                    arguments.sell_token_address,
+                                                                    arguments.dsr_offset)
                                 for price_feed in arguments.price_feed.split(",")])
 
     @staticmethod
@@ -298,7 +301,8 @@ class PriceFeedFactory:
                            price_feed_expiry_argument: int,
                            tub: Optional[Tub],
                            web3: Web3,
-                           sell_token_address: str):
+                           sell_token_address: str,
+                           dsr_offset: float = 0):
         assert(isinstance(price_feed_argument, str))
         assert(isinstance(price_feed_expiry_argument, int))
         assert(isinstance(tub, Tub) or tub is None)
@@ -363,12 +367,14 @@ class PriceFeedFactory:
         elif price_feed_argument == 'zcd_chai-theory':
               return SplitPriceFeed(pair="ZCD-CHAI",
                                     web3=web3,
-                                    token_address=Address(sell_token_address))
+                                    token_address=Address(sell_token_address),
+                                    dsr_offset=Decimal(dsr_offset))
 
         elif price_feed_argument == 'dcc_chai-theory':
               return SplitPriceFeed(pair="DCC-CHAI",
                                     web3=web3,
-                                    token_address=Address(sell_token_address))
+                                    token_address=Address(sell_token_address),
+                                    dsr_offset=Decimal(dsr_offset))
 
         elif price_feed_argument.startswith("fixed:"):
             price_feed = FixedPriceFeed(Wad.from_number(price_feed_argument[6:]))

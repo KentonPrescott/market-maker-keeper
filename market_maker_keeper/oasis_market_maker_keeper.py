@@ -138,6 +138,9 @@ class OasisMarketMakerKeeper:
         parser.add_argument("--refresh-frequency", type=int, default=10,
                             help="Order book refresh frequency (in seconds, default: 10)")
 
+        parser.add_argument("--dsr-offset", type=float, default=0,
+                            help="DSR Offset in valuation model for ZCD and DCC")
+
         parser.add_argument("--debug", dest='debug', action='store_true',
                             help="Enable debug output")
 
